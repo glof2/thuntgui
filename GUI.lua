@@ -196,7 +196,7 @@ local function serverHop(min_players, max_players)
         if v.playing > max_players then
             continue
         end
-        syn.queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua"))
+        syn.queue_on_teleport("loadstring(game:HttpGet(\"https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua\"))()")
         TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
     end
 end
@@ -783,10 +783,37 @@ spawnThread(function()
 end)
 
 Players.PlayerRemoving:Connect(function()
-    if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
-        serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+    if getgenv().cheat_settings.autoserverhop then
+        if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
+            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+        end
+        if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
+            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+        end
     end
-    if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
-        serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+end)
+
+Players.PlayerAdded:Connect(function()
+    if getgenv().cheat_settings.autoserverhop then
+        if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
+            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+        end
+        if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
+            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+        end
+    end
+end)
+
+spawnThread(function()
+    while wait() do
+        while getgenv().cheat_settings.autoserverhop do
+            if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
+                serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+            end
+            if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
+                serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+            end
+            wait(15)
+        end
     end
 end)
