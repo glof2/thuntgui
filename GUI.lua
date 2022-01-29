@@ -117,8 +117,10 @@ local function loadData()
     end
     local file_content = readfile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt")
     local table = HttpService:JSONDecode(file_content)
-    getgenv().cheat_vars = table.cheat_var
-    getgenv().cheat_settings = table.cheat_setting
+    if table.cheat_setting.savesettings == true then
+        getgenv().cheat_vars = table.cheat_var
+        getgenv().cheat_settings = table.cheat_setting
+    end
     return true
 end
 
@@ -247,8 +249,13 @@ local function getFirstBlock()
 end
 
 local function digBlock(block)
-    if getgenv().player_data["tool"].Parent ~= getgenv().player_data["character"] or getgenv().player_data["tool"].Parent ~= getgenv().player_data["player"]:WaitForChild("Backpack") then
+    while getgenv().player_data["tool"] == nil do
         updatePlayerData()
+        wait()
+    end
+    while getgenv().player_data["tool"].Parent ~= getgenv().player_data["character"] or getgenv().player_data["tool"].Parent ~= getgenv().player_data["player"]:WaitForChild("Backpack") do
+        updatePlayerData()
+        wait()
     end
     if getgenv().player_data["tool"].Parent == getgenv().player_data["player"]:WaitForChild("Backpack") then
         getgenv().player_data["tool"].Parent = getgenv().player_data["character"]
@@ -700,16 +707,14 @@ end)
 
 other_section:NewToggle("Save settings", "Save settings", function(state)
     getgenv().cheat_settings.savesettings = state
+    saveData()
 end)
 
 spawnThread(function()
     while wait(15) do
         if getgenv().cheat_settings.savesettings then
             saveData()
-        else
-            removeData()
         end
-        
     end
 end)
 
@@ -771,14 +776,18 @@ spawnThread(function()
     end
 end)
 
+local can_teleport = true
+
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autoserverhop do
-            if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
-                serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
-            end
-            if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
-                serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+            if can_teleport == true then
+                if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
+                    serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+                end
+                if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
+                    serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+                end
             end
             wait(15)
         end
@@ -788,5 +797,9 @@ end)
 getgenv().player_data["player"].OnTeleport:Connect(function(state)
     if state == Enum.TeleportState.Started then
         syn.queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua"))
+        can_teleport = false
+    end
+    if state == Enum.TeleportState.Failed then
+        can_teleport = true
     end
 end)
