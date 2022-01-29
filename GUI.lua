@@ -196,7 +196,6 @@ local function serverHop(min_players, max_players)
         if v.playing > max_players then
             continue
         end
-        syn.queue_on_teleport("loadstring(game:HttpGet(\"https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua\"))()")
         TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
     end
 end
@@ -782,28 +781,6 @@ spawnThread(function()
     end
 end)
 
-Players.PlayerRemoving:Connect(function()
-    if getgenv().cheat_settings.autoserverhop then
-        if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
-            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
-        end
-        if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
-            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
-        end
-    end
-end)
-
-Players.PlayerAdded:Connect(function()
-    if getgenv().cheat_settings.autoserverhop then
-        if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
-            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
-        end
-        if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
-            serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
-        end
-    end
-end)
-
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autoserverhop do
@@ -815,5 +792,11 @@ spawnThread(function()
             end
             wait(15)
         end
+    end
+end)
+
+getgenv().player_data["player"].OnTeleport:Connect(function(state)
+    if state == Enum.TeleportState.Started then
+        syn.queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua"))
     end
 end)
