@@ -8,6 +8,8 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local VirtualUser = game:GetService("VirtualUser")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 -- Global Environment Variables
 getgenv().cheat_settings = {}
@@ -23,7 +25,9 @@ getgenv().cheat_settings.freegamepass = false
 getgenv().cheat_settings.gcollide = true
 getgenv().cheat_settings.walkspeed = false
 getgenv().cheat_settings.jumppower = false
+getgenv().cheat_settings.autoserverhop = false
 getgenv().cheat_settings.antiafk = true
+getgenv().cheat_settings.savesettings = false
 
 -- Predefining game data
 getgenv().thunt_data = {}
@@ -70,7 +74,8 @@ getgenv().player_data = {}
 getgenv().cheat_vars = {}
 getgenv().cheat_vars.walkspeed = 16
 getgenv().cheat_vars.jumppower = 50
-getgenv().cheat_vars.sandblocks = workspace:WaitForChild("SandBlocks")
+getgenv().cheat_vars.servermin = 6
+getgenv().cheat_vars.servermax= 14
 getgenv().cheat_vars.chosen_autobuycrate = 
 {
     Tier1 = false,
@@ -89,8 +94,54 @@ getgenv().cheat_vars.chosen_autoopencrates =
     Tier5 = false,
     Tier6 = false
 }
+getgenv().cheat_vars.chosen_autofarm = {}
+
+local chests_arr = getgenv().thunt_data.getChestNames(true)
+for i,v in pairs(chests_arr) do
+    getgenv().cheat_vars.chosen_autofarm[v] = false
+end
+
+sandblocks = workspace:WaitForChild("SandBlocks")
 
 -- Utility functions
+local function saveData()
+    if getgenv().player_data["player"] == nil then
+        return false
+    end
+    local table = 
+    {
+        cheat_var = getgenv().cheat_vars,
+        cheat_setting = getgenv().cheat_settings
+    }
+    local json = HttpService:JSONEncode(table)
+    makefolder("THUNT_GUI")
+    writefile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt", json)
+    return true
+end
+
+local function loadData()
+    if getgenv().player_data["player"] == nil then
+        return false
+    end
+    if(not isfile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt")) then
+        return nil
+    end
+    local file_content = readfile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt")
+    local table = HttpService:JSONDecode(file_content)
+    getgenv().cheat_vars = table.cheat_var
+    getgenv().cheat_settings = table.cheat_setting
+    return true
+end
+
+local function removeData()
+    if getgenv().player_data["player"] == nil then
+        return false
+    end
+    if isfile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt") then
+        delfile("THUNT_GUI\\data_"..getgenv().player_data["player"].Name.."v1.txt")
+    end
+end
+
 local function spawnThread(task, ...)
     local cor = coroutine.create(task)
     local success, message = coroutine.resume(cor, ...)
@@ -135,6 +186,21 @@ end
 
 -- Cheat functions
 updatePlayerData()
+
+local function serverHop(min_players, max_players)
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    for i,v in pairs(servers.data) do
+        if v.playing < min_players then
+            continue
+        end
+        if v.playing > max_players then
+            continue
+        end
+        syn.queue_on_teleport(game:HttpGet("https://raw.githubusercontent.com/glof2/thuntgui/main/GUI.lua"))
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
+    end
+end
+
 local function teleportTo(cframe)
     getgenv().player_data["root"].CFrame = cframe
 end
@@ -166,19 +232,16 @@ local function platformStand()
 end
 
 local function findChest(filters)
-    for ind1, part1 in pairs(getgenv().cheat_vars.sandblocks:GetChildren()) do
-        for ind2, part2 in pairs(part1:GetChildren()) do
-            if part2.Name:match("Chest") then
-                local chest_type =  part1:FindFirstChild("Mat")
-                if chest_type == nil then
-                    break
+    for ind1, part1 in pairs(sandblocks:GetChildren()) do
+        if part1:FindFirstChild("Chest") then
+            local chest_type =  part1:FindFirstChild("Mat")
+            if chest_type == nil then
+                continue
+            end
+            for i,v in pairs(filters) do
+                if v == chest_type.Value or v:match(chest_type.Value) then
+                    return part1
                 end
-                for i,v in pairs(filters) do
-                    if v == chest_type.Value or v:match(chest_type.Value) then
-                        return part1
-                    end
-                end
-
             end
         end
     end
@@ -186,9 +249,9 @@ local function findChest(filters)
 end
 
 local function getFirstBlock()
-    local children = getgenv().cheat_vars.sandblocks:GetChildren()
+    local children = sandblocks:GetChildren()
     for i,v in pairs(children) do
-        if v:FindFirstChild("Rock") == nil then
+        if v:FindFirstChild("Rock") == nil and v:FindFirstChild("Chest") == nil then
             return v
         end
     end
@@ -378,7 +441,7 @@ local function autoChest(chests)
     local hp = block.Health.Value
     local retries = 0
     while getgenv().cheat_settings.autochest and block ~= nil do
-        if block.Parent ~= getgenv().cheat_vars.sandblocks then
+        if block.Parent ~= sandblocks then
             break
         end
 
@@ -449,18 +512,14 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+while loadData() == false do
+    wait(1)
+end
+
 -- GUI
 local KavoLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 
 local window = KavoLibrary.CreateLib("Treasure Hunt", "Midnight")
-
-local chests_arr = getgenv().thunt_data.getChestNames(true)
-local chosen = {}
-for i,v in pairs(chests_arr) do
-    chosen[v] = false
-end
-
-chosen["Common Chest (1)"] = true
 
 -- Main tab
 local main_tab = window:NewTab("Main")
@@ -468,30 +527,10 @@ local autofarm_section = main_tab:NewSection("Main")
 autofarm_section:NewLabel("Autofarm Chests")
 autofarm_section:NewToggle("On/Off", "Teleports around the map collecting chests", function(state)
     getgenv().cheat_settings.autochest = state
-    spawnThread(function()
-        while getgenv().cheat_settings.autochest do
-            if getgenv().player_data["character"] == nil or getgenv().player_data["tool"] == nil then
-                updatePlayerData()
-            end
-
-            local arr = {}
-
-            for k,v in pairs(chosen) do
-                if v == true then
-                    table.insert(arr, k)
-                end
-            end
-
-            autoChest(arr)
-
-            buyEverything()
-            wait()
-        end
-    end)
 end)
 
 local text = "Chests: "
-for k,v in pairs(chosen) do
+for k,v in pairs(getgenv().cheat_vars.chosen_autofarm) do
     if v == true then
         text = text..k..", "
     end
@@ -499,9 +538,9 @@ end
 
 local label = autofarm_section:NewLabel(text)
 autofarm_section:NewDropdown("Chests", "Which chests to autofarm", chests_arr, function(currentOption)
-    chosen[currentOption] = not(chosen[currentOption])
+    getgenv().cheat_vars.chosen_autofarm[currentOption] = not(getgenv().cheat_vars.chosen_autofarm[currentOption])
     local new_text = "Chests: "
-    for k,v in pairs(chosen) do
+    for k,v in pairs(getgenv().cheat_vars.chosen_autofarm) do
         if v == true then
             new_text = new_text..k..", "
         end
@@ -511,14 +550,6 @@ end)
 
 autofarm_section:NewToggle("   Auto rebirth", "Automatically rebirths when possible.", function(state)
     getgenv().cheat_settings.autorebirth = state
-    if getgenv().cheat_settings.autorebirth then
-        spawnThread(function()
-            while getgenv().cheat_settings.autorebirth do
-                rebirth()
-                wait(5)
-            end
-        end)
-    end
 end)
 
 autofarm_section:NewToggle("   Auto sell", "Automatically sells when your backpack is full", function(state)
@@ -537,6 +568,18 @@ autofarm_section:NewToggle("   Auto buy pets", "Buys the best available pet when
     getgenv().cheat_settings.autobuypets = state
 end)
 
+autofarm_section:NewToggle("   Auto server hop", "Will server hop if there's too many or too few players.", function(state)
+    getgenv().cheat_settings.autoserverhop = state
+end)
+
+autofarm_section:NewSlider("   Minimum Players: ", "", 14, 1, function(val)
+    getgenv().cheat_vars.servermin = val
+end)
+
+autofarm_section:NewSlider("   Maximum Players: ", "", 14, 1, function(val)
+    getgenv().cheat_vars.servermax = val
+end)
+
 autofarm_section:NewLabel("Auto buy crates")
 
 local crate_text = "Crates: "
@@ -551,16 +594,6 @@ local autocrates_label = autofarm_section:NewLabel(crate_text)
 
 autofarm_section:NewToggle("   Auto buy crates", "Buys the chosen crates pet you have enough money.", function(state)
     getgenv().cheat_settings.autobuycrates = state
-    spawnThread(function()
-        while getgenv().cheat_settings.autobuycrates do
-            for k,v in pairs(getgenv().cheat_vars.chosen_autobuycrate) do
-                if v == true then
-                    buyCrate(k, getgenv().player_data["player"].Name, 1)
-                end
-            end
-            wait(0.5)
-        end
-    end)
 end)
 
 autofarm_section:NewDropdown("Choose crates", "Which crates to buy", crates_arr, function(current_option)
@@ -628,16 +661,6 @@ local autocrates_label = crates_section:NewLabel(crate_text)
 
 crates_section:NewToggle("Auto open crates", "Opens selected crates.", function(state)
     getgenv().cheat_settings.autoopencrates = state
-    spawnThread(function()
-        while getgenv().cheat_settings.autoopencrates do
-            for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
-                if v == true then
-                    openCrate(k)
-                end
-            end
-            wait()
-        end
-    end)
 end)
 
 crates_section:NewDropdown("Choose crates", "Which crates to open", crates_arr, function(current_option)
@@ -683,5 +706,87 @@ antiafk = other_section:NewButton("Anti afk (on)", "Anti afk", function()
         antiafk:UpdateButton("Anti afk (on)")
     else
         antiafk:UpdateButton("Anti afk (off)")
+    end
+end)
+
+other_section:NewToggle("Save settings", "Save settings", function(state)
+    getgenv().cheat_settings.savesettings = state
+end)
+
+spawnThread(function()
+    while wait(15) do
+        if getgenv().cheat_settings.savesettings then
+            saveData()
+        else
+            removeData()
+        end
+        
+    end
+end)
+
+spawnThread(function()
+    while wait() do
+        while getgenv().cheat_settings.autochest do
+            if getgenv().player_data["character"] == nil or getgenv().player_data["tool"] == nil then
+                updatePlayerData()
+            end
+
+            local arr = {}
+
+            for k,v in pairs(getgenv().cheat_vars.chosen_autofarm) do
+                if v == true then
+                    table.insert(arr, k)
+                end
+            end
+
+            autoChest(arr)
+
+            buyEverything()
+            wait()
+        end
+    end
+end)
+
+spawnThread(function()
+    while wait() do
+        while getgenv().cheat_settings.autorebirth do
+            rebirth()
+            wait(5)
+        end
+    end
+end)
+
+spawnThread(function()
+    while wait() do
+        while getgenv().cheat_settings.autobuycrates do
+            for k,v in pairs(getgenv().cheat_vars.chosen_autobuycrate) do
+                if v == true then
+                    buyCrate(k, getgenv().player_data["player"].Name, 1)
+                end
+            end
+            wait(0.5)
+        end
+    end
+end)
+
+spawnThread(function()
+    while wait() do
+        while getgenv().cheat_settings.autoopencrates do
+            for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
+                if v == true then
+                    openCrate(k)
+                end
+            end
+            wait()
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function()
+    if #Players:GetPlayers() < getgenv().cheat_vars.servermin then
+        serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
+    end
+    if #Players:GetPlayers() > getgenv().cheat_vars.servermax then
+        serverHop(getgenv().cheat_vars.servermin, getgenv().cheat_vars.servermax)
     end
 end)
