@@ -155,7 +155,7 @@ end
 
 local function updatePlayerData()
     getgenv().player_data["player"] = Players.LocalPlayer
-    getgenv().player_data["character"] = getgenv().player_data["player"].Character
+    getgenv().player_data["character"] = getgenv().player_data["player"].Character or getgenv().player_data["player"].CharacterAdded:Wait()
     getgenv().player_data["humanoid"] = getgenv().player_data["character"]:WaitForChild("Humanoid")
     getgenv().player_data["root"] = getgenv().player_data["character"]:WaitForChild("HumanoidRootPart")
     getgenv().player_data["tool"] = getgenv().player_data["player"]:WaitForChild("Backpack"):GetChildren()[1]
