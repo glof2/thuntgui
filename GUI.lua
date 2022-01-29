@@ -58,11 +58,7 @@ end
 function thunt_data.getCrateNames()
     local ret_val = {}
     for ind, val in pairs(getgenv().thunt_data.crates:GetChildren()) do
-        if not val:FindFirstChild("CaseName") then
-            continue
-        else
-            table.insert(ret_val, val.Name)
-        end
+        ret_val[ind] = val.Name
     end
     return ret_val
 end
@@ -76,26 +72,19 @@ getgenv().cheat_vars.walkspeed = 16
 getgenv().cheat_vars.jumppower = 50
 getgenv().cheat_vars.servermin = 6
 getgenv().cheat_vars.servermax= 14
-getgenv().cheat_vars.chosen_autobuycrate = 
-{
-    Tier1 = false,
-    Tier2 = false,
-    Tier3 = false,
-    Tier4 = false,
-    Tier5 = false,
-    Tier6 = false
-}
-getgenv().cheat_vars.chosen_autoopencrates =
-{
-    Tier1 = false,
-    Tier2 = false,
-    Tier3 = false,
-    Tier4 = false,
-    Tier5 = false,
-    Tier6 = false
-}
-getgenv().cheat_vars.chosen_autofarm = {}
 
+getgenv().cheat_vars.chosen_autobuycrate = {}
+getgenv().cheat_vars.chosen_autoopencrates = {}
+
+local crates_arr = getgenv().thunt_data.getCrateNames()
+for i,v in pairs(crates_arr) do
+    print(i, v)
+    getgenv().cheat_vars.chosen_autobuycrate[v] = false
+    getgenv().cheat_vars.chosen_autoopencrates[v] = false
+end
+
+
+getgenv().cheat_vars.chosen_autofarm = {}
 local chests_arr = getgenv().thunt_data.getChestNames(true)
 for i,v in pairs(chests_arr) do
     getgenv().cheat_vars.chosen_autofarm[v] = false
@@ -547,35 +536,37 @@ autofarm_section:NewDropdown("Chests", "Which chests to autofarm", chests_arr, f
     label:UpdateLabel(new_text)
 end)
 
-autofarm_section:NewToggle("   Auto rebirth", "Automatically rebirths when possible.", function(state)
+autofarm_section:NewToggle("Auto rebirth", "Automatically rebirths when possible.", function(state)
     getgenv().cheat_settings.autorebirth = state
 end)
 
-autofarm_section:NewToggle("   Auto sell", "Automatically sells when your backpack is full", function(state)
+autofarm_section:NewToggle("Auto sell", "Automatically sells when your backpack is full", function(state)
     getgenv().cheat_settings.autosell = state
 end)
 
-autofarm_section:NewToggle("   Auto buy shovels", "Buys the best available shovel when you get enough money.", function(state)
+autofarm_section:NewToggle("Auto buy shovels", "Buys the best available shovel when you get enough money.", function(state)
     getgenv().cheat_settings.autobuyshovels = state
 end)
 
-autofarm_section:NewToggle("   Auto buy backpacks", "Buys the best available backpack when you get enough money.", function(state)
+autofarm_section:NewToggle("Auto buy backpacks", "Buys the best available backpack when you get enough money.", function(state)
     getgenv().cheat_settings.autobuybackpacks = state
 end)
 
-autofarm_section:NewToggle("   Auto buy pets", "Buys the best available pet when you get enough money.", function(state)
+autofarm_section:NewToggle("Auto buy pets", "Buys the best available pet when you get enough money.", function(state)
     getgenv().cheat_settings.autobuypets = state
 end)
 
-autofarm_section:NewToggle("   Auto server hop", "Will server hop if there's too many or too few players.", function(state)
+autofarm_section:NewLabel("Auto server hop")
+
+autofarm_section:NewToggle("Auto server hop", "Will server hop if there's too many or too few players.", function(state)
     getgenv().cheat_settings.autoserverhop = state
 end)
 
-autofarm_section:NewSlider("   Minimum Players: ", "", 14, 1, function(val)
+autofarm_section:NewSlider("Minimum Players: ", "", 14, 1, function(val)
     getgenv().cheat_vars.servermin = val
 end)
 
-autofarm_section:NewSlider("   Maximum Players: ", "", 14, 1, function(val)
+autofarm_section:NewSlider("Maximum Players: ", "", 14, 1, function(val)
     getgenv().cheat_vars.servermax = val
 end)
 
@@ -588,10 +579,9 @@ for k,v in pairs(getgenv().cheat_vars.chosen_autobuycrate) do
     end
 end
 
-local crates_arr = {"Tier1", "Tier2", "Tier3", "Tier4", "Tier5", "Tier6"}
 local autocrates_label = autofarm_section:NewLabel(crate_text)
 
-autofarm_section:NewToggle("   Auto buy crates", "Buys the chosen crates pet you have enough money.", function(state)
+autofarm_section:NewToggle("Auto buy crates", "Buys the chosen crates pet you have enough money.", function(state)
     getgenv().cheat_settings.autobuycrates = state
 end)
 
@@ -606,8 +596,34 @@ autofarm_section:NewDropdown("Choose crates", "Which crates to buy", crates_arr,
     autocrates_label:UpdateLabel(new_text)
 end)
 
+autofarm_section:NewLabel("Auto open crates")
+
+local autocrate_text = "Crates: "
+for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
+    if v == true then
+        autocrate_text = autocrate_text..k..", "
+    end
+end
+
+local autocrates_label = autofarm_section:NewLabel(crate_text)
+
+autofarm_section:NewToggle("Auto open crates", "Opens selected crates.", function(state)
+    getgenv().cheat_settings.autoopencrates = state
+end)
+
+autofarm_section:NewDropdown("Choose crates", "Which crates to open", crates_arr, function(current_option)
+    getgenv().cheat_vars.chosen_autoopencrates[current_option] = not(getgenv().cheat_vars.chosen_autoopencrates[current_option])
+    local new_text = "Crates: "
+    for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
+        if v == true then
+            new_text = new_text..k..", "
+        end
+    end
+    autocrates_label:UpdateLabel(new_text)
+end)
+
 -- Misc tab
-local misc_tab = window:NewTab("Misc.")
+local misc_tab = window:NewTab("Misc")
 local gamepass_section = misc_tab:NewSection("Free gamepasses")
 gamepass_section:NewToggle("On/Off", "Unlocks all the gamepasses that are possible to unlock.", function(state)
     getgenv().cheat_settings.freegamepass = state
@@ -645,32 +661,6 @@ end)
 
 crates_section:NewButton("Buy", "Buy Crates", function()
     buyCrate(chosen_crate, chosen_player, chosen_quantity)
-end)
-
-crates_section:NewLabel("Auto open crates")
-
-local autocrate_text = "Crates: "
-for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
-    if v == true then
-        autocrate_text = autocrate_text..k..", "
-    end
-end
-
-local autocrates_label = crates_section:NewLabel(crate_text)
-
-crates_section:NewToggle("Auto open crates", "Opens selected crates.", function(state)
-    getgenv().cheat_settings.autoopencrates = state
-end)
-
-crates_section:NewDropdown("Choose crates", "Which crates to open", crates_arr, function(current_option)
-    getgenv().cheat_vars.chosen_autoopencrates[current_option] = not(getgenv().cheat_vars.chosen_autoopencrates[current_option])
-    local new_text = "Crates: "
-    for k,v in pairs(getgenv().cheat_vars.chosen_autoopencrates) do
-        if v == true then
-            new_text = new_text..k..", "
-        end
-    end
-    autocrates_label:UpdateLabel(new_text)
 end)
 
 -- Local Player Tab
