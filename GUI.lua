@@ -239,20 +239,27 @@ end
 local function serverHop(min_players, max_players)
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
     local teleported = false
+    local cursor = ""
     while not teleported  do
-        for i,v in pairs(servers.data) do
-            if v.playing < min_players then
-                continue
+        if servers.nextPageCursor ~= nil then
+            for i,v in pairs(servers.data) do
+                if v.playing < min_players then
+                    continue
+                end
+                if v.playing > max_players then
+                    continue
+                end
+                teleported = true
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
+                break
             end
-            if v.playing > max_players then
-                continue
+            if not teleported then
+                cursor = servers.nextPageCursor
+                servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100&cursor="..cursor))
             end
-            teleported = true
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
-            break
-        end
-        if not teleported then
-            servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100&cursor="..servers.nextPageCursor))
+        else
+            wait(10)
+            servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100&cursor="..cursor))
         end
         wait(1)
     end
