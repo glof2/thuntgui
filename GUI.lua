@@ -625,7 +625,7 @@ autofarm_section:NewToggle("Auto server hop", "Will server hop if there's too ma
 end)
 
 autofarm_section:NewSlider("Minimum Players: ", "", 14, 1, function(val)
-    getgenv().cheat_vars.servermin = val + 1
+    getgenv().cheat_vars.servermin = val - 1
 end)
 
 autofarm_section:NewSlider("Maximum Players: ", "", 14, 1, function(val)
