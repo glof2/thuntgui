@@ -1,6 +1,28 @@
 -- Logic
 repeat wait() until game:IsLoaded()
 
+if getgenv().thunt_gui_executed then
+    getgenv().thunt_gui_executed = true
+    getgenv().cheat_settings = {}
+    getgenv().cheat_settings.autochest = false
+    getgenv().cheat_settings.autosell = false
+    getgenv().cheat_settings.autobuyshovels = false
+    getgenv().cheat_settings.autobuybackpacks = false
+    getgenv().cheat_settings.autobuypets = false
+    getgenv().cheat_settings.autorebirth = false
+    getgenv().cheat_settings.autobuycrates = false
+    getgenv().cheat_settings.autoopencrates = false
+    getgenv().cheat_settings.freegamepass = false
+    getgenv().cheat_settings.gcollide = true
+    getgenv().cheat_settings.autoinvisible = false
+    getgenv().cheat_settings.walkspeed = false
+    getgenv().cheat_settings.jumppower = false
+    getgenv().cheat_settings.autoserverhop = false
+    getgenv().cheat_settings.antiafk = true
+    getgenv().cheat_settings.savesettings = false
+    wait(5)
+end
+
 -- Services
 local PhysicsService = game:GetService("PhysicsService")
 local RunService = game:GetService("RunService")
@@ -12,6 +34,7 @@ local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
 
 -- Global Environment Variables
+getgenv().thunt_gui_executed = true
 getgenv().cheat_settings = {}
 getgenv().cheat_settings.autochest = false
 getgenv().cheat_settings.autosell = false
@@ -23,6 +46,7 @@ getgenv().cheat_settings.autobuycrates = false
 getgenv().cheat_settings.autoopencrates = false
 getgenv().cheat_settings.freegamepass = false
 getgenv().cheat_settings.gcollide = true
+getgenv().cheat_settings.autoinvisible = false
 getgenv().cheat_settings.walkspeed = false
 getgenv().cheat_settings.jumppower = false
 getgenv().cheat_settings.autoserverhop = false
@@ -78,7 +102,6 @@ getgenv().cheat_vars.chosen_autoopencrates = {}
 
 local crates_arr = getgenv().thunt_data.getCrateNames()
 for i,v in pairs(crates_arr) do
-    print(i, v)
     getgenv().cheat_vars.chosen_autobuycrate[v] = false
     getgenv().cheat_vars.chosen_autoopencrates[v] = false
 end
@@ -149,7 +172,14 @@ local function updatePlayerData()
     getgenv().player_data["character"] = getgenv().player_data["player"].Character or getgenv().player_data["player"].CharacterAdded:Wait()
     getgenv().player_data["humanoid"] = getgenv().player_data["character"]:WaitForChild("Humanoid")
     getgenv().player_data["root"] = getgenv().player_data["character"]:WaitForChild("HumanoidRootPart")
-    getgenv().player_data["tool"] = getgenv().player_data["player"]:WaitForChild("Backpack"):GetChildren()[1]
+    getgenv().player_data["tool"] = nil
+    for ind, val in pairs(getgenv().player_data["player"]:WaitForChild("Backpack"):GetChildren()) do
+        if val:IsA("Tool") then
+            getgenv().player_data["tool"] = val
+            break
+        end
+    end
+
     if getgenv().player_data["tool"] == nil then
         for ind, val in pairs(getgenv().player_data["character"]:GetChildren()) do
             if val:IsA("Tool") then
@@ -177,6 +207,30 @@ end
 
 -- Cheat functions
 updatePlayerData()
+
+local function goInvisible()
+    local clone = getgenv().player_data["character"]:WaitForChild("LowerTorso"):WaitForChild("Root"):Clone()
+    local before_tp = getgenv().player_data["root"].CFrame 
+
+    getgenv().player_data["root"].Anchored = true
+    getgenv().player_data["root"].CFrame = CFrame.new(-102, 10, -416)
+    getgenv().player_data["root"].Anchored = false
+    
+    local part = createInstance("Part", 
+    {
+        Anchored = true,
+        CFrame = CFrame.new(-102, 10, -416),
+        Size = Vector3.new(5, 5, 5),
+        CanTouch = true,
+        CanCollide = false,
+        Parent = workspace
+    })
+    part.Touched:Connect(function()
+        game.Players.LocalPlayer.Character.LowerTorso.Root:Destroy()
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = before_tp
+        part:Destroy()
+    end)
+end
 
 local function serverHop(min_players, max_players)
     local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
@@ -253,14 +307,14 @@ local function digBlock(block)
         updatePlayerData()
         wait()
     end
-    while getgenv().player_data["tool"].Parent ~= getgenv().player_data["character"] or getgenv().player_data["tool"].Parent ~= getgenv().player_data["player"]:WaitForChild("Backpack") do
+    while(getgenv().player_data["tool"].Parent ~= getgenv().player_data["character"] and getgenv().player_data["tool"].Parent ~= getgenv().player_data["player"]:WaitForChild("Backpack"))  do
         updatePlayerData()
         wait()
     end
-    if getgenv().player_data["tool"].Parent == getgenv().player_data["player"]:WaitForChild("Backpack") then
-        getgenv().player_data["tool"].Parent = getgenv().player_data["character"]
-    end
-    getgenv().player_data["tool"]:WaitForChild("RemoteClick"):FireServer(block)
+
+    getgenv().player_data["humanoid"]:EquipTool(getgenv().player_data["tool"])
+
+    getgenv().player_data["tool"]:FindFirstChild("RemoteClick"):FireServer(block)
 end
 
 local function checkMaxBackpack()
@@ -459,7 +513,7 @@ local function autoChest(chests)
             retries = 0
         end
 
-        if retries >= 10 then
+        if retries >= 3 then
             block.Parent = nil
             break
         end
@@ -472,6 +526,9 @@ end
 -- Auto character update
 getgenv().player_data["player"].CharacterAdded:Connect(function(char)
     updatePlayerData()
+    if getgenv().cheat_settings.autoinvisible then
+        goInvisible()
+    end
 end)
 
 -- Anti afk
@@ -676,6 +733,7 @@ local walkspeed_section = localplayer_tab:NewSection("Walk speed")
 walkspeed_section:NewToggle("On/Off", "Walk speed cheat.", function(state)
     getgenv().cheat_settings.walkspeed = state
 end)
+
 walkspeed_section:NewSlider("Walk speed", "", 500, 16, function(val)
     getgenv().cheat_vars.walkspeed = val
 end)
@@ -692,6 +750,16 @@ local other_section = localplayer_tab:NewSection("Other")
 other_section:NewButton("Kill player", "Kills the player", function()
     getgenv().player_data["humanoid"].Health = 0
 end)
+
+other_section:NewToggle("Auto Invisible", "Makes you automatically go invisible", function(state)
+    getgenv().cheat_settings.autoinvisible = state
+    if getgenv().cheat_settings.autoinvisible then
+        pcall(function()
+            goInvisible()
+        end)
+    end
+end)
+
 other_section:NewToggle("Noclip", "Noclip", function(state)
     getgenv().cheat_settings.gcollide = not state
 end)
