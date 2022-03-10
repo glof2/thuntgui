@@ -1,30 +1,11 @@
--- Logic
 repeat wait() until game:IsLoaded()
 
+-- Making sure the game is Treasure Hunt Simulator
 if game.PlaceId ~= 1345139196 then
-    game.Players.LocalPlayer:Kick("This cheat only works on Treasure Hunt Simulator!")
+    game.Players.LocalPlayer:Kick("This script only works on Treasure Hunt Simulator!")
 end
-
-if getgenv().thunt_gui_executed then
-    getgenv().thunt_gui_executed = true
-    getgenv().cheat_settings = {}
-    getgenv().cheat_settings.autochest = false
-    getgenv().cheat_settings.autosell = false
-    getgenv().cheat_settings.autobuyshovels = false
-    getgenv().cheat_settings.autobuybackpacks = false
-    getgenv().cheat_settings.autobuypets = false
-    getgenv().cheat_settings.autorebirth = false
-    getgenv().cheat_settings.autobuycrates = false
-    getgenv().cheat_settings.autoopencrates = false
-    getgenv().cheat_settings.freegamepass = false
-    getgenv().cheat_settings.gcollide = true
-    getgenv().cheat_settings.autoinvisible = false
-    getgenv().cheat_settings.walkspeed = false
-    getgenv().cheat_settings.jumppower = false
-    getgenv().cheat_settings.autoserverhop = false
-    getgenv().cheat_settings.antiafk = true
-    getgenv().cheat_settings.savesettings = false
-    wait(5)
+if getgenv(.thunt_gui_executed) then
+    game.Players.LocalPlayer:Kick("GUI executed twice!")
 end
 
 -- Services
@@ -57,7 +38,7 @@ getgenv().cheat_settings.autoserverhop = false
 getgenv().cheat_settings.antiafk = true
 getgenv().cheat_settings.savesettings = false
 
--- Predefining game data
+-- Predefining needed game data
 getgenv().thunt_data = {}
 getgenv().thunt_data.chests = ReplicatedStorage:WaitForChild("Chests")
 getgenv().thunt_data.crates = ReplicatedStorage:WaitForChild("Crates")
@@ -120,6 +101,7 @@ end
 sandblocks = workspace:WaitForChild("SandBlocks")
 
 -- Utility functions
+-- Data related functions
 local function saveData()
     if getgenv().player_data["player"] == nil then
         return false
@@ -160,16 +142,12 @@ local function removeData()
     end
 end
 
+-- Other functions
 local function spawnThread(task, ...)
     local cor = coroutine.create(task)
     local success, message = coroutine.resume(cor, ...)
     return cor, success, message
 end
-
-local function delayThread(task, delay, ...)
-    wait(delay)
-    return spawnThread(task, ...)
-end 
 
 local function updatePlayerData()
     getgenv().player_data["player"] = Players.LocalPlayer
@@ -798,6 +776,9 @@ other_section:NewToggle("Save settings", "Save settings", function(state)
     saveData()
 end)
 
+-- Cheat logic
+
+-- Saving data
 spawnThread(function()
     while wait(15) do
         if getgenv().cheat_settings.savesettings then
@@ -806,6 +787,7 @@ spawnThread(function()
     end
 end)
 
+-- Auto chest
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autochest do
@@ -829,6 +811,7 @@ spawnThread(function()
     end
 end)
 
+-- Auto rebirth
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autorebirth do
@@ -838,6 +821,7 @@ spawnThread(function()
     end
 end)
 
+-- Auto buy crates
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autobuycrates do
@@ -851,6 +835,7 @@ spawnThread(function()
     end
 end)
 
+-- Auto open crates
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autoopencrates do
@@ -864,8 +849,8 @@ spawnThread(function()
     end
 end)
 
+-- Auto server hop
 local can_teleport = true
-
 spawnThread(function()
     while wait() do
         while getgenv().cheat_settings.autoserverhop do
