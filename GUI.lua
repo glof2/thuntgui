@@ -1,6 +1,10 @@
 -- Logic
 repeat wait() until game:IsLoaded()
 
+if game.PlaceId ~= 1345139196 then
+    game.Players.LocalPlayer:Kick("This cheat only works on Treasure Hunt Simulator!")
+end
+
 if getgenv().thunt_gui_executed then
     getgenv().thunt_gui_executed = true
     getgenv().cheat_settings = {}
@@ -233,20 +237,24 @@ local function goInvisible()
 end
 
 local function serverHop(min_players, max_players)
-    local servers
-    if max_player >= 7 then
-        servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
-    else
-        servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100"))
-    end
-    for i,v in pairs(servers.data) do
-        if v.playing < min_players then
-            continue
+    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    local teleported = false
+    while not teleported  do
+        for i,v in pairs(servers.data) do
+            if v.playing < min_players then
+                continue
+            end
+            if v.playing > max_players then
+                continue
+            end
+            teleported = true
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
+            break
         end
-        if v.playing > max_players then
-            continue
+        if not teleported then
+            servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100&cursor="..servers.nextPageCursor))
         end
-        TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id)
+        wait(1)
     end
 end
 
