@@ -629,7 +629,7 @@ autofarm_section:NewSlider("Minimum Players: ", "", 14, 1, function(val)
 end)
 
 autofarm_section:NewSlider("Maximum Players: ", "", 14, 1, function(val)
-    getgenv().cheat_vars.servermax = val - 1
+    getgenv().cheat_vars.servermax = val + 1
 end)
 
 autofarm_section:NewLabel("Auto buy crates")
