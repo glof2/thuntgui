@@ -4,7 +4,7 @@ repeat wait() until game:IsLoaded()
 if game.PlaceId ~= 1345139196 then
     game.Players.LocalPlayer:Kick("This script only works on Treasure Hunt Simulator!")
 end
-if getgenv(.thunt_gui_executed) then
+if getgenv().thunt_gui_executed then
     game.Players.LocalPlayer:Kick("GUI executed twice!")
 end
 
