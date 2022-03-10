@@ -233,7 +233,12 @@ local function goInvisible()
 end
 
 local function serverHop(min_players, max_players)
-    local servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    local servers
+    if max_player >= 7 then
+        servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+    else
+        servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Desc&limit=100"))
+    end
     for i,v in pairs(servers.data) do
         if v.playing < min_players then
             continue
@@ -466,7 +471,7 @@ end
 -- Free gamepasses
 local oldFunction
 oldFunction = hookmetamethod(game, "__namecall", newcclosure(function(Self, ...)
-    if checkcaller() then
+    if not checkcaller() then
         if Self == MarketplaceService then
             local method = getnamecallmethod()
             if method == "UserOwnsGamePassAsync" then
@@ -688,7 +693,7 @@ end)
 
 -- Misc tab
 local misc_tab = window:NewTab("Misc")
-local gamepass_section = misc_tab:NewSection("Free gamepasses")
+local gamepass_section = misc_tab:NewSection("Free gamepasses | NOT WORKING")
 gamepass_section:NewToggle("On/Off", "Unlocks all the gamepasses that are possible to unlock.", function(state)
     getgenv().cheat_settings.freegamepass = state
 end)
